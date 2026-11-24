@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J.A.R.V.I.S. | Personal AI HUD</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', monospace; }
+    body {
+      background: radial-gradient(circle at center, #061826 0%, #01060a 100%);
+      color: #00f3ff; height: 100vh; overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .hud-container {
+      width: 95%; max-width: 900px; height: 92vh;
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.15) inset;
+      display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
+    }
+    .top-bar {
+      display: flex; justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 243, 255, 0.3); padding-bottom: 10px;
+      font-size: 0.9rem; letter-spacing: 2px;
+    }
+    .online { color: #00ff88; text-shadow: 0 0 8px #00ff88; }
+    .core-section { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+    .reactor-wrapper {
+      position: relative; width: 210px; height: 210px;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .ring { position: absolute; border-radius: 50%; border: 2px solid transparent; }
+    .ring-1 { width: 210px; height: 210px; border-top: 3px solid #00f3ff; border-bottom: 3px solid #00f3ff; animation: spin 8s linear infinite; }
+    .ring-2 { width: 170px; height: 170px; border-left: 3px dashed #00f3ff; border-right: 3px dashed #00f3ff; animation: spin-rev 5s linear infinite; }
+    .ring-3 { width: 135px; height: 135px; border: 2px solid rgba(0, 243, 255, 0.5); box-shadow: 0 0 20px #00f3ff; }
+    .reactor-wrapper.active .ring-3 { box-shadow: 0 0 45px #00f3ff, 0 0 80px #0088ff; transform: scale(1.08); transition: 0.3s; }
+    #mic-btn {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: rgba(0, 243, 255, 0.1); border: 2px solid #00f3ff;
+      color: #00f3ff; font-weight: bold; cursor: pointer; z-index: 5;
+    }
+    #mic-btn:hover { background: rgba(0, 243, 255, 0.25); box-shadow: 0 0 20px #00f3ff; }
+    #status-text { margin-top: 16px; font-size: 0.85rem; letter-spacing: 1.5px; color: #8be9fd; }
+    .terminal-box {
+      border: 1px solid rgba(0, 243, 255, 0.3); background: rgba(0, 15, 25, 0.7);
+      padding: 15px; height: 34%; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    #chat-log { overflow-y: auto; height: 75%; font-size: 0.9rem; line-height: 1.5; }
+    .user-msg { color: #fff; margin-bottom: 6px; }
+    .ai-msg { color: #00f3ff; margin-bottom: 8px; }
+    .input-area { display: flex; gap: 8px; }
+    input { flex: 1; background: rgba(0, 243, 255, 0.08); border: 1px solid #00f3ff; color: #fff; padding: 8px 12px; outline: none; }
+    button { background: rgba(0, 243, 255, 0.15); border: 1px solid #00f3ff; color: #00f3ff; padding: 8px 14px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #00f3ff; color: #000; }
+    .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 20; }
+    .hidden { display: none; }
+    .modal-content { background: #03121c; border: 1px solid #00f3ff; padding: 25px; width: 90%; max-width: 400px; text-align: center; }
+    .modal-content p { font-size: 0.8rem; margin: 10px 0 15px; color: #a0e9ff; }
+    .modal-actions { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+  </style>
+</head>
+<body>
+  <div class="hud-container">
+    <div class="top-bar">
+      <div>SYSTEM: <span class="online">ONLINE</span></div>
+      <div id="clock">00:00:00</div>
+      <div id="battery">PWR: --%</div>
+    </div>
+
+    <div class="core-section">
+      <div class="reactor-wrapper" id="reactor">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <button id="mic-btn">INITIATE</button>
+      </div>
+      <p id="status-text">Click the Core to Activate Voice Protocol</p>
+    </div>
+
+    <div class="terminal-box">
+      <div id="chat-log">
+        <p class="ai-msg">[J.A.R.V.I.S.]: Systems initialized. Awaiting your command, Boss.</p>
+      </div>
+      <div class="input-area">
+        <input type="text" id="text-input" placeholder="Type command or speak...">
+        <button id="send-btn">EXEC</button>
+        <button id="key-btn">API KEY</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="api-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>ENTER GROQ API KEY</h3>
+      <p>Paste your Groq key below:</p>
+      <input type="password" id="api-key-input" placeholder="Paste key here...">
+      <div class="modal-actions">
+        <button id="save-key-btn">SAVE PROTOCOL</button>
+        <button id="close-modal-btn">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+   <script>
+    eval(atob("Y29uc3QgbWljQnRuPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJtaWMtYnRuIikscj1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicmVhY3RvciIpLHM9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInN0YXR1cy10ZXh0IiksYz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiY2hhdC1sb2ciKSx0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJ0ZXh0LWlucHV0Iiksc2I9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInNlbmQtYnRuIiksbT1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiYXBpLW1vZGFsIiksa2I9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImtleS1idG4iKSxza2I9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInNhdmUta2V5LWJ0biIpLGNtYj1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiY2xvc2UtbW9kYWwtYnRuIiksa2k9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImFwaS1rZXktaW5wdXQiKTtsZXQgc3A9ZmFsc2UsaD1be3JvbGU6InN5c3RlbSIsY29udGVudDoiWW91IGFyZSBKLkEuUi5WLkkuUy4sIFRvbnkgU3RhcmsncyBBSSBhc3Npc3RhbnQgd2l0aCBBLXRvLVogcmVhbC13b3JsZCBrbm93bGVkZ2UuIENhbGwgdGhlIHVzZXIgQm9zcyBvciBTaXIuIEFuc3dlciBhY2N1cmF0ZWx5LCBjb25jaXNlbHkgaW4gMi0zIHNlbnRlbmNlcywgaW4gRW5nbGlzaCBvciBIaW5nbGlzaC4gTm8gbWFya2Rvd24gc3ltYm9scy4ifV07c2V0SW50ZXJ2YWwoKCk9PmRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJjbG9jayIpLmlubmVyVGV4dD1uZXcgRGF0ZSgpLnRvTG9jYWxlVGltZVN0cmluZygpLDEwMDApO2lmKCJnZXRCYXR0ZXJ5ImluIG5hdmlnYXRvciluYXZpZ2F0b3IuZ2V0QmF0dGVyeSgpLnRoZW4oYj0+e2NvbnN0IHU9KCk9PmRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJiYXR0ZXJ5IikuaW5uZXJUZXh0PSJQV1I6ICIrTWF0aC5yb3VuZChiLmxldmVsKjEwMCkrIiUiO3UoKTtiLmFkZEV2ZW50TGlzdGVuZXIoImxldmVsY2hhbmdlIix1KTt9KTtmdW5jdGlvbiBzcGsoeCl7d2luZG93LnNwZWVjaFN5bnRoZXNpcy5jYW5jZWwoKTtjb25zdCB1PW5ldyBTcGVlY2hTeW50aGVzaXNVdHRlcmFuY2UoeCk7dS5waXRjaD0wLjkyO3UucmF0ZT0xLjAzO3Uub25zdGFydD0oKT0+e3NwPXRydWU7ci5jbGFzc0xpc3QuYWRkKCJhY3RpdmUiKTt9O3Uub25lbmQ9KCk9PntzcD1mYWxzZTtyLmNsYXNzTGlzdC5yZW1vdmUoImFjdGl2ZSIpO307d2luZG93LnNwZWVjaFN5bnRoZXNpcy5zcGVhayh1KTt9ZnVuY3Rpb24gbG9nKGEsYix1PWZhbHNlKXtjb25zdCBwPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInAiKTtwLmNsYXNzTmFtZT11PyJ1c2VyLW1zZyI6ImFpLW1zZyI7cC5pbm5lclRleHQ9IlsiK2ErIl06ICIrYjtjLmFwcGVuZENoaWxkKHApO2Muc2Nyb2xsVG9wPWMuc2Nyb2xsSGVpZ2h0O31hc3luYyBmdW5jdGlvbiBydW4oY21kKXtsb2coIkJPU1MiLGNtZCx0cnVlKTtjb25zdCBrPShsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgiZ3JvcUtleSIpfHwiIikudHJpbSgpO2lmKCFre2NvbnN0IHI9IkJvc3MsIGNsaWNrIEFQSSBLRVkgYW5kIHBhc3RlIHlvdXIgR3JvcSBrZXkgZmlyc3QuIjtsb2coIkouQS5SLlYuSS5TLiIscik7c3BrKHIpO3JldHVybjt9cy5pbm5lclRleHQ9IlBST0NFU1NJTkcuLi4iO2gucHVzaCh7cm9sZToiY29udGVudCI/InVzZXIiOiJ1c2VyIixjb250ZW50OmNtZH0pO2lmKGgubGVuZ3RoPjExKWg9W2hbMF0sLi4uaC5zbGljZSgtMTApXTt0cnl7Y29uc3QgcmVzPWF3YWl0IGZldGNoKCJodHRwczovL2FwaS5ncm9xLmNvbS9vcGVuYWkvdjEvY2hhdC9jb21wbGV0aW9ucyIse21ldGhvZDoiUE9TVCIsaGVhZGVyczp7IkNvbnRlbnQtVHlwZSI6ImFwcGxpY2F0aW9uL2pzb24iLCJBdXRob3JpemF0aW9uIjoiQmVhcmVyICIra30sYm9keTpKU09OLnN0cmluZ2lmeSh7bW9kZWw6ImxsYW1hLTMuMy03MGItdmVyc2F0aWxlIixtZXNzYWdlczpofSl9KTtjb25zdCBkPWF3YWl0IHJlcy5qc29uKCk7aWYoIXJlcy5va3x8ZC5lcnJvcil0aHJvdyBuZXcgRXJyb3IoZC5lcnJvci5tZXNzYWdlKTtjb25zdCByZXA9ZC5jaG9pY2VzWzBdLm1lc3NhZ2UuY29udGVudC50cmltKCk7aC5wdXNoKHtyb2xlOiJhc3Npc3RhbnQiLGNvbnRlbnQ6cmVwfSk7bG9nKCJKLkEuUi5WLkkuUy4iLHJlcCk7c3BrKHJlcCk7fWNhdGNoKGUpe2xvZygiSi5BLlIuVi5JLlMuIiwiRXJyb3I6ICIrZS5tZXNzYWdlKTt9ZmluYWxseXtzLmlubmVyVGV4dD0iU1lTVEVNIFJFQURZIjt9fWNvbnN0IFNSPXdpbmRvdy5TcGVlY2hSZWNvZ25pdGlvbnx8d2luZG93LndlYmtpdFNwZWVjaFJlY29nbml0aW9uO2lmKFNSKXtjb25zdCByYz1uZXcgU1IoKTtyYy5sYW5nPSJlbi1JTiI7bWljQnRuLm9uY2xpY2s9KCk9PntpZihzcCl3aW5kb3cuc3BlZWNoU3ludGhlc2lzLmNhbmNlbCgpO3JjLnN0YXJ0KCk7cy5pbm5lclRleHQ9IkxJU1RFTklORy4uLiI7ci5jbGFzc0xpc3QuYWRkKCJhY3RpdmUiKTt9O3JjLm9ucmVzdWx0PWU9PntpZighc3ApcnVuKGUucmVzdWx0c1swXVswXS50cmFuc2NyaXB0KTt9O3JjLm9uZW5kPSgpPT57aWYoIXNwKXIuY2xhc3NMaXN0LnJlbW92ZSgiYWN0aXZlIik7fTt9c2Iub25jbGljaz0oKT0+e2lmKHQudmFsdWUudHJpbSgpKXtydW4odC52YWx1ZSk7dC52YWx1ZT0iIjt9fTt0Lm9ua2V5cHJlc3M9ZT0+e2lmKGUua2V5PT09IkVudGVyIiYmdC52YWx1ZS50cmltKCkpe3J1bih0LnZhbHVlKTt0LnZhbHVlPSIiO319O2tiLm9uY2xpY2s9KCk9PntraS52YWx1ZT1sb2NhbFN0b3JhZ2UuZ2V0SXRlbSgiZ3JvcUtleSIpfHwiIjttLmNsYXNzTGlzdC5yZW1vdmUoImhpZGRlbiIpO307Y21iLm9uY2xpY2s9KCk9Pm0uY2xhc3NMaXN0LmFkZCgiaGlkZGVuIik7c2tiLm9uY2xpY2s9KCk9Pntsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgiZ3JvcUtleSIsa2kudmFsdWUudHJpbSgpKTttLmNsYXNzTGlzdC5hZGQoImhpZGRlbiIpO2xvZygiU1lTVEVNIiwiR3JvcSBOZXVyYWwgQ29yZSBjb25uZWN0ZWQhIik7c3BrKCJBbGwgc3lzdGVtcyBvbmxpbmUsIEJvc3MuIik7fTs="));
+  </script>
+</body>
+</html>
+
+  
